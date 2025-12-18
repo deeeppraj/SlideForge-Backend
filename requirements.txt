@@ -6,3 +6,5 @@ fastapi
 fastapi[standard]
 pexels-api-py
 python-pptx
+gunicorn
+uvicorn
