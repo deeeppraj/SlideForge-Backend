@@ -1,0 +1,8 @@
+langchain
+langchain-groq
+langchain-community
+pydantic
+fastapi
+fastapi[standard]
+pexels-api-py
+python-pptx
