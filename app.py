@@ -57,7 +57,7 @@ def export(payload :list = Body(...)):
     prs = Presentation()
     for slide in payload:
         create_slide(prs , slide)
-    filename = f"presentation-{uuid.uuid4()}.pptx"
+    filename = f"/tmp/{uuid.uuid4()}.pptx"
     prs.save(filename)
 
     return FileResponse(
