@@ -103,8 +103,9 @@ def create_elegant_slide(prs, slide_data):
     title_accent.line.fill.background()
     
     title_box = slide.shapes.add_textbox(
-    Inches(0.5), Inches(1.8), Inches(9), Inches(2.2)  
+    Inches(0.6), Inches(0.35), Inches(8.8), Inches(1.2)
     )
+
     tf = title_box.text_frame
     tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     tf.word_wrap = True

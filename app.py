@@ -60,18 +60,15 @@ def export(payload: list = Body(...)):
     prs.slide_width = Inches(10)
     prs.slide_height = Inches(7.5)
     
-    if payload and len(payload) > 0:
-        first_slide = payload[0]
-        if "is_title_slide" in first_slide and first_slide["is_title_slide"]:
-            create_title_slide(
-                prs,
-                title=first_slide.get("title", "Presentation"),
-                subtitle=first_slide.get("subtitle", ""),
-                author=first_slide.get("author", "")
-            )
-            payload = payload[1:]
-    
     for slide in payload:
+
+        create_title_slide(
+            prs,
+            title=slide.get("title", "Presentation"),
+            subtitle=slide.get("subtitle", ""),
+            author=slide.get("author", "")
+        )
+
         create_elegant_slide(prs, slide)
     
     filename = f"/tmp/{uuid.uuid4()}.pptx"
