@@ -34,11 +34,11 @@ class ColorPalette:
 class TypographyConfig:
     FONT_PRIMARY = "Calibri"
     FONT_SIZE_TITLE = Pt(54)
-    FONT_SIZE_POINT_4 = Pt(24)
+    FONT_SIZE_POINT_4 = Pt(22)
     FONT_SIZE_POINT_3 = Pt(28)
     FONT_SIZE_POINT_2 = Pt(32)
     FONT_SIZE_POINT_1 = Pt(36)
-    FONT_SIZE_EXP_4 = Pt(13)
+    FONT_SIZE_EXP_4 = Pt(12)
     FONT_SIZE_EXP_3 = Pt(14)
     FONT_SIZE_EXP_2 = Pt(15)
     FONT_SIZE_EXP_1 = Pt(16)
@@ -103,9 +103,10 @@ def create_elegant_slide(prs, slide_data):
     title_accent.line.fill.background()
     
     title_box = slide.shapes.add_textbox(
-        Inches(0.5), Inches(0.3), Inches(9.2), Inches(1.3)
+    Inches(0.5), Inches(1.8), Inches(9), Inches(2.2)  
     )
     tf = title_box.text_frame
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     tf.word_wrap = True
     title = tf.paragraphs[0]
     title.text = clamp_text(slide_data["title"], 85)
@@ -165,12 +166,13 @@ def create_elegant_slide(prs, slide_data):
             "vertical_spacing": 0.35
         },
         4: {
-            "point_size": TypographyConfig.FONT_SIZE_POINT_4,
-            "exp_size": TypographyConfig.FONT_SIZE_EXP_4,
-            "max_chars": 100,
-            "line_spacing": 1.35,
-            "vertical_spacing": 0.4
-        }
+                "point_size": Pt(22),       
+                "exp_size": Pt(12),          
+                "line_spacing": 1.25,        
+                "space_before": 0,          
+                "space_after_point": 1,      
+                "space_after_exp": 3      
+            }
     }
     
     cfg = config_map[count]
