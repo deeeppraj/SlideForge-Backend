@@ -5,9 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel,Field
 from main  import model_output , new_img
 from utils.image import resolve_images,resolve_new_img
-from utils.presentation_maker import create_slide
+from utils.presentation_maker import create_elegant_slide, create_title_slide, ColorPalette
 from fastapi.responses import FileResponse
 from pptx import Presentation
+from pptx.util import Inches, Pt
+
 
 
 
@@ -53,18 +55,32 @@ async def generate_new_img(payload:newImage):
      return response
 
 @app.post(path='/export/ppt')
-def export(payload :list = Body(...)):
+def export(payload: list = Body(...)):
     prs = Presentation()
+    prs.slide_width = Inches(10)
+    prs.slide_height = Inches(7.5)
+    
+    if payload and len(payload) > 0:
+        first_slide = payload[0]
+        if "is_title_slide" in first_slide and first_slide["is_title_slide"]:
+            create_title_slide(
+                prs,
+                title=first_slide.get("title", "Presentation"),
+                subtitle=first_slide.get("subtitle", ""),
+                author=first_slide.get("author", "")
+            )
+            payload = payload[1:]
+    
     for slide in payload:
-        create_slide(prs , slide)
+        create_elegant_slide(prs, slide)
+    
     filename = f"/tmp/{uuid.uuid4()}.pptx"
     prs.save(filename)
-
+    
     return FileResponse(
         path=filename,
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
         filename="download_presentation.pptx"
-    
     )
     
     

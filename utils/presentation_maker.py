@@ -1,13 +1,16 @@
+import os
+import uuid
+import requests
 from pptx import Presentation
 from pptx.util import Inches, Pt
-from pptx.enum.shapes import MSO_SHAPE
-from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
-import requests, uuid, os
+from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
-prs = Presentation()
-prs.slide_width = Inches(10)
-prs.slide_height = Inches(7.5)
+
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip('#')
+    return RGBColor(*tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4)))
 
 
 def clamp_text(text, max_chars):
@@ -16,126 +19,289 @@ def clamp_text(text, max_chars):
     return text[:max_chars].rsplit(" ", 1)[0] + "…"
 
 
-def create_slide(prs, slide_data):
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
+class ColorPalette:
+    BACKGROUND = "0A0E27"
+    CARD_BG = "0F1729"
+    ACCENT_CYAN = "00D9FF"
+    ACCENT_PURPLE = "9D4EDD"
+    ACCENT_PINK = "FF006E"
+    TEXT_PRIMARY = "F5F7FA"
+    TEXT_SECONDARY = "B8BEC9"
+    TEXT_MUTED = "7C8696"
+    BORDER_COLOR = "1B2845"
 
+
+class TypographyConfig:
+    FONT_PRIMARY = "Calibri"
+    FONT_SIZE_TITLE = Pt(54)
+    FONT_SIZE_POINT_4 = Pt(24)
+    FONT_SIZE_POINT_3 = Pt(28)
+    FONT_SIZE_POINT_2 = Pt(32)
+    FONT_SIZE_POINT_1 = Pt(36)
+    FONT_SIZE_EXP_4 = Pt(13)
+    FONT_SIZE_EXP_3 = Pt(14)
+    FONT_SIZE_EXP_2 = Pt(15)
+    FONT_SIZE_EXP_1 = Pt(16)
+
+
+def create_elegant_slide(prs, slide_data):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    
     bg = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE,
-        Inches(0), Inches(0),
-        prs.slide_width, prs.slide_height
+        MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height
     )
     bg.fill.solid()
-    bg.fill.fore_color.rgb = RGBColor(3, 7, 18)
+    bg.fill.fore_color.rgb = hex_to_rgb(ColorPalette.BACKGROUND)
     bg.line.fill.background()
     slide.shapes._spTree.remove(bg._element)
     slide.shapes._spTree.insert(2, bg._element)
-
-    for x, y, size, color, t in [
-        (-3, -3, 10, RGBColor(17, 24, 39), 0.5),
-        (5, -2, 8, RGBColor(30, 41, 59), 0.6),
-        (3, 4, 9, RGBColor(15, 23, 42), 0.7),
-    ]:
-        orb = slide.shapes.add_shape(
-            MSO_SHAPE.OVAL, Inches(x), Inches(y),
-            Inches(size), Inches(size)
-        )
-        orb.fill.solid()
-        orb.fill.fore_color.rgb = color
-        orb.fill.transparency = t
-        orb.line.fill.background()
-
+    
+    glow_top_left = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, Inches(-1.2), Inches(-0.8),
+        Inches(4.5), Inches(4.5)
+    )
+    glow_top_left.fill.solid()
+    glow_top_left.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+    glow_top_left.fill.transparency = 0.93
+    glow_top_left.line.fill.background()
+    
+    glow_bottom_right = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, Inches(8.8), Inches(4.2),
+        Inches(4.2), Inches(4.2)
+    )
+    glow_bottom_right.fill.solid()
+    glow_bottom_right.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_PURPLE)
+    glow_bottom_right.fill.transparency = 0.92
+    glow_bottom_right.line.fill.background()
+    
+    glow_accent = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, Inches(4.8), Inches(2.5),
+        Inches(2), Inches(2)
+    )
+    glow_accent.fill.solid()
+    glow_accent.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_PINK)
+    glow_accent.fill.transparency = 0.94
+    glow_accent.line.fill.background()
+    
+    title_bg = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        Inches(0.3), Inches(0.2),
+        Inches(9.4), Inches(1.5)
+    )
+    title_bg.fill.solid()
+    title_bg.fill.fore_color.rgb = hex_to_rgb(ColorPalette.CARD_BG)
+    title_bg.fill.transparency = 0.3
+    title_bg.line.fill.background()
+    
+    title_accent = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        Inches(0.3), Inches(1.65),
+        Inches(9.4), Inches(0.04)
+    )
+    title_accent.fill.solid()
+    title_accent.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+    title_accent.line.fill.background()
+    
     title_box = slide.shapes.add_textbox(
-        Inches(0.5), Inches(0.8),
-        Inches(9), Inches(1.0)
+        Inches(0.5), Inches(0.3), Inches(9.2), Inches(1.3)
     )
     tf = title_box.text_frame
-    tf.clear()
-    title = tf.paragraphs[0]
-    title.text = slide_data["title"].upper()
-    title.font.size = Pt(40)
-    title.font.bold = True
-    title.font.color.rgb = RGBColor(255, 255, 255)
-    title.alignment = PP_ALIGN.LEFT
-
-    accent = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE,
-        Inches(0.5), Inches(1.85),
-        Inches(3.5), Pt(4)
-    )
-    accent.fill.solid()
-    accent.fill.fore_color.rgb = RGBColor(96, 165, 250)
-    accent.line.fill.background()
-
-    card = slide.shapes.add_shape(
-        MSO_SHAPE.ROUNDED_RECTANGLE,
-        Inches(0.35), Inches(2.3),
-        Inches(5.7), Inches(5.2)
-    )
-    card.fill.solid()
-    card.fill.fore_color.rgb = RGBColor(15, 23, 42)
-    card.fill.transparency = 0.35
-    card.line.fill.background()
-
-    content_box = slide.shapes.add_textbox(
-        Inches(0.7), Inches(2.6),
-        Inches(5.0), Inches(4.8)
-    )
-    tf = content_box.text_frame
     tf.word_wrap = True
-    tf.clear()
-
-    points = slide_data["points"][:4]
-    explanations = slide_data["explanation"][:4]
-
-    if len(points) <= 3:
-        point_size = Pt(26)
-        exp_size = Pt(16)
-        exp_spacing = Pt(10)
-    else:
-        point_size = Pt(21)
-        exp_size = Pt(13)
-        exp_spacing = Pt(6)
-
-    for i, point in enumerate(points):
-        bullet = tf.add_paragraph() if i > 0 else tf.paragraphs[0]
-        bullet.text = "◆ " + clamp_text(point, 60)
-        bullet.font.size = point_size
-        bullet.font.bold = True
-        bullet.font.color.rgb = RGBColor(255, 255, 255)
-        bullet.space_after = Pt(3)
-
-        exp = tf.add_paragraph()
-        exp.text = clamp_text(explanations[i], 120)
-        exp.font.size = exp_size
-        exp.font.color.rgb = RGBColor(203, 213, 225)
-        exp.line_spacing = 1.15
-        exp.space_after = exp_spacing
-
-    frame = slide.shapes.add_shape(
+    title = tf.paragraphs[0]
+    title.text = clamp_text(slide_data["title"], 85)
+    title.font.size = TypographyConfig.FONT_SIZE_TITLE
+    title.font.bold = True
+    title.font.color.rgb = hex_to_rgb(ColorPalette.TEXT_PRIMARY)
+    title.font.name = TypographyConfig.FONT_PRIMARY
+    
+    content_top = 2.0
+    content_height = 5.0
+    
+    left_panel = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE,
-        Inches(6.15), Inches(2.25),
-        Inches(3.6), Inches(4.9)
+        Inches(0.3), Inches(content_top),
+        Inches(6.2), Inches(content_height)
     )
-    frame.fill.solid()
-    frame.fill.fore_color.rgb = RGBColor(10, 15, 30)
-    frame.line.color.rgb = RGBColor(96, 165, 250)
-    frame.line.width = Pt(2)
-
-    img_bytes = requests.get(slide_data["image"]).content
-    img_path = f"{uuid.uuid4()}.jpg"
-    with open(img_path, "wb") as f:
-        f.write(img_bytes)
-
-    slide.shapes.add_picture(
-        img_path,
-        Inches(6.25), Inches(2.35),
-        width=Inches(3.4),
-        height=Inches(4.7)
+    left_panel.fill.solid()
+    left_panel.fill.fore_color.rgb = hex_to_rgb(ColorPalette.CARD_BG)
+    left_panel.fill.transparency = 0.15
+    left_panel.line.color.rgb = hex_to_rgb(ColorPalette.BORDER_COLOR)
+    left_panel.line.width = Pt(0.75)
+    left_panel.adjustments[0] = 0.08
+    
+    text_box = slide.shapes.add_textbox(
+        Inches(0.55), Inches(content_top + 0.25),
+        Inches(5.7), Inches(content_height - 0.5)
     )
-    os.remove(img_path)
+    tf = text_box.text_frame
+    tf.word_wrap = True
+    tf.vertical_anchor = MSO_ANCHOR.TOP
+    tf.clear()
+    
+    points = slide_data.get("points", [])
+    explanations = slide_data.get("explanation", [])
+    count = min(len(points), len(explanations), 4)
+    
+    config_map = {
+        1: {
+            "point_size": TypographyConfig.FONT_SIZE_POINT_1,
+            "exp_size": TypographyConfig.FONT_SIZE_EXP_1,
+            "max_chars": 150,
+            "line_spacing": 1.3,
+            "vertical_spacing": 0.15
+        },
+        2: {
+            "point_size": TypographyConfig.FONT_SIZE_POINT_2,
+            "exp_size": TypographyConfig.FONT_SIZE_EXP_2,
+            "max_chars": 130,
+            "line_spacing": 1.3,
+            "vertical_spacing": 0.25
+        },
+        3: {
+            "point_size": TypographyConfig.FONT_SIZE_POINT_3,
+            "exp_size": TypographyConfig.FONT_SIZE_EXP_3,
+            "max_chars": 115,
+            "line_spacing": 1.4,
+            "vertical_spacing": 0.35
+        },
+        4: {
+            "point_size": TypographyConfig.FONT_SIZE_POINT_4,
+            "exp_size": TypographyConfig.FONT_SIZE_EXP_4,
+            "max_chars": 100,
+            "line_spacing": 1.35,
+            "vertical_spacing": 0.4
+        }
+    }
+    
+    cfg = config_map[count]
+    
+    for i in range(count):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.text = "▸ " + clamp_text(points[i], 55)
+        p.font.size = cfg["point_size"]
+        p.font.bold = True
+        p.font.color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+        p.font.name = TypographyConfig.FONT_PRIMARY
+        p.space_before = Pt(cfg["vertical_spacing"] * 72) if i > 0 else Pt(0)
+        p.space_after = Pt(6)
+        
+        exp = tf.add_paragraph()
+        exp.text = clamp_text(explanations[i], cfg["max_chars"])
+        exp.font.size = cfg["exp_size"]
+        exp.font.color.rgb = hex_to_rgb(ColorPalette.TEXT_SECONDARY)
+        exp.font.name = TypographyConfig.FONT_PRIMARY
+        exp.line_spacing = cfg["line_spacing"]
+        exp.space_after = Pt(0)
+    
+    img_size = Inches(2.9)
+    img_left = Inches(6.7)
+    img_top = Inches(content_top + 0.3)
+    
+    img_frame = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE,
+        img_left, img_top, img_size, img_size
+    )
+    img_frame.fill.solid()
+    img_frame.fill.fore_color.rgb = hex_to_rgb(ColorPalette.CARD_BG)
+    img_frame.fill.transparency = 0.05
+    img_frame.line.color.rgb = hex_to_rgb(ColorPalette.ACCENT_PURPLE)
+    img_frame.line.width = Pt(1.5)
+    img_frame.adjustments[0] = 0.08
+    
+    try:
+        if "image" in slide_data and slide_data["image"]:
+            img_bytes = requests.get(slide_data["image"], timeout=5).content
+            path = f"{uuid.uuid4()}.jpg"
+            with open(path, "wb") as f:
+                f.write(img_bytes)
+            
+            slide.shapes.add_picture(
+                path,
+                img_left + Inches(0.12),
+                img_top + Inches(0.12),
+                width=img_size - Inches(0.24),
+                height=img_size - Inches(0.24)
+            )
+            
+            os.remove(path)
+    except Exception as e:
+        pass
+    
+    footer_line = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        Inches(0.3), Inches(7.35),
+        Inches(9.4), Inches(0.03)
+    )
+    footer_line.fill.solid()
+    footer_line.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+    footer_line.line.fill.background()
 
 
-
-
-
+def create_title_slide(prs, title, subtitle="", author=""):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    
+    bg = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height
+    )
+    bg.fill.solid()
+    bg.fill.fore_color.rgb = hex_to_rgb(ColorPalette.BACKGROUND)
+    bg.line.fill.background()
+    slide.shapes._spTree.remove(bg._element)
+    slide.shapes._spTree.insert(2, bg._element)
+    
+    glow1 = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, Inches(-1.5), Inches(-1),
+        Inches(5), Inches(5)
+    )
+    glow1.fill.solid()
+    glow1.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+    glow1.fill.transparency = 0.92
+    glow1.line.fill.background()
+    
+    glow2 = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, Inches(8.5), Inches(4),
+        Inches(4.5), Inches(4.5)
+    )
+    glow2.fill.solid()
+    glow2.fill.fore_color.rgb = hex_to_rgb(ColorPalette.ACCENT_PURPLE)
+    glow2.fill.transparency = 0.91
+    glow2.line.fill.background()
+    
+    title_box = slide.shapes.add_textbox(
+        Inches(1), Inches(2.5), Inches(8), Inches(1.5)
+    )
+    tf = title_box.text_frame
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    p.text = clamp_text(title, 100)
+    p.font.size = Pt(66)
+    p.font.bold = True
+    p.font.color.rgb = hex_to_rgb(ColorPalette.TEXT_PRIMARY)
+    p.font.name = TypographyConfig.FONT_PRIMARY
+    p.alignment = PP_ALIGN.CENTER
+    
+    if subtitle:
+        subtitle_box = slide.shapes.add_textbox(
+            Inches(1), Inches(4.2), Inches(8), Inches(1)
+        )
+        tf = subtitle_box.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = clamp_text(subtitle, 120)
+        p.font.size = Pt(28)
+        p.font.color.rgb = hex_to_rgb(ColorPalette.ACCENT_CYAN)
+        p.font.name = TypographyConfig.FONT_PRIMARY
+        p.alignment = PP_ALIGN.CENTER
+    
+    if author:
+        author_box = slide.shapes.add_textbox(
+            Inches(1), Inches(6.5), Inches(8), Inches(0.5)
+        )
+        tf = author_box.text_frame
+        p = tf.paragraphs[0]
+        p.text = author
+        p.font.size = Pt(16)
+        p.font.color.rgb = hex_to_rgb(ColorPalette.TEXT_MUTED)
+        p.font.name = TypographyConfig.FONT_PRIMARY
+        p.alignment = PP_ALIGN.CENTER
 
